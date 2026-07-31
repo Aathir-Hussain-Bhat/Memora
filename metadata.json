@@ -1,0 +1,6 @@
+{
+  "name": "Memora",
+  "description": "Remember Everything. Find Anything.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
