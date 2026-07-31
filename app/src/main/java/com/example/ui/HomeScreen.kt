@@ -8,14 +8,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -25,83 +22,30 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material.icons.filled.AutoGraph
-import androidx.compose.runtime.remember
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: MemoraViewModel,
     onAddClick: () -> Unit,
-    onGraphClick: () -> Unit
+    onGraphClick: () -> Unit // Kept for signature compatibility for now
 ) {
     val notes by viewModel.notes.collectAsStateWithLifecycle()
-    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-    
-    // Derived collections (categories)
-    val categories = remember(notes) {
-        notes.map { it.category }.distinct().filter { it.isNotBlank() }.sorted()
-    }
 
     Scaffold(
         topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            TopAppBar(
+                title = { 
                     Text(
                         text = "Memora",
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    IconButton(onClick = onGraphClick) {
-                        Icon(Icons.Default.AutoGraph, contentDescription = "Knowledge Map", tint = MaterialTheme.colorScheme.primary)
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.onSearchQueryChange(it) },
-                    placeholder = { Text("Search memories...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp)),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    ),
-                    singleLine = true
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
                 )
-                if (categories.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(
-                            items = categories,
-                            itemContent = { category ->
-                                FilterChip(
-                                    selected = searchQuery == category,
-                                    onClick = { 
-                                        if (searchQuery == category) viewModel.onSearchQueryChange("")
-                                        else viewModel.onSearchQueryChange(category)
-                                    },
-                                    label = { Text(category) }
-                                )
-                            }
-                        )
-                    }
-                }
-            }
+            )
         },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End) {
@@ -128,7 +72,7 @@ fun HomeScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (searchQuery.isBlank()) "No memories yet. Tap + to capture." else "No results found.",
+                    text = "No memories yet. Tap + to capture.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -141,6 +85,14 @@ fun HomeScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                item {
+                    Text(
+                        text = "Recent Memories",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
                 items(notes) { note ->
                     NoteCard(
                         note = note,
@@ -151,6 +103,7 @@ fun HomeScreen(
         }
     }
 }
+
 
 @Composable
 fun NoteCard(note: Note, onDeleteClick: () -> Unit) {
