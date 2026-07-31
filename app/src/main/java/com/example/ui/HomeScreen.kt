@@ -25,14 +25,24 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.icons.filled.AutoGraph
+import androidx.compose.runtime.remember
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: MemoraViewModel,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onGraphClick: () -> Unit
 ) {
     val notes by viewModel.notes.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    
+    // Derived collections (categories)
+    val categories = remember(notes) {
+        notes.map { it.category }.distinct().filter { it.isNotBlank() }.sorted()
+    }
 
     Scaffold(
         topBar = {
@@ -41,12 +51,21 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(
-                    text = "Memora",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Memora",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    IconButton(onClick = onGraphClick) {
+                        Icon(Icons.Default.AutoGraph, contentDescription = "Knowledge Map", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = searchQuery,
@@ -64,15 +83,39 @@ fun HomeScreen(
                     ),
                     singleLine = true
                 )
+                if (categories.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(
+                            items = categories,
+                            itemContent = { category ->
+                                FilterChip(
+                                    selected = searchQuery == category,
+                                    onClick = { 
+                                        if (searchQuery == category) viewModel.onSearchQueryChange("")
+                                        else viewModel.onSearchQueryChange(category)
+                                    },
+                                    label = { Text(category) }
+                                )
+                            }
+                        )
+                    }
+                }
             }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Memory")
+            Column(horizontalAlignment = Alignment.End) {
+                VoiceCaptureFab(onVoiceCaptured = { text -> 
+                    viewModel.addNote("Voice Note", text)
+                })
+                Spacer(modifier = Modifier.height(16.dp))
+                FloatingActionButton(
+                    onClick = onAddClick,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Memory")
+                }
             }
         },
         containerColor = MaterialTheme.colorScheme.background

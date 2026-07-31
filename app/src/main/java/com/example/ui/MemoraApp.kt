@@ -13,11 +13,18 @@ fun MemoraApp(viewModel: MemoraViewModel) {
         composable("home") {
             HomeScreen(
                 viewModel = viewModel,
-                onAddClick = { navController.navigate("add_note") }
+                onAddClick = { navController.navigate("add_note") },
+                onGraphClick = { navController.navigate("graph") }
             )
         }
         composable("add_note") {
             AddNoteScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("graph") {
+            GraphScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )

@@ -11,6 +11,12 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+import com.example.BuildConfig
+import com.example.data.Content
+import com.example.data.GenerateContentRequest
+import com.example.data.Part
+import com.example.data.RetrofitClient
+
 class MemoraViewModel(private val repository: NoteRepository) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -36,7 +42,26 @@ class MemoraViewModel(private val repository: NoteRepository) : ViewModel() {
 
     fun addNote(title: String, content: String) {
         viewModelScope.launch {
-            repository.insert(Note(title = title, content = content))
+            val apiKey = BuildConfig.GEMINI_API_KEY
+            var category = "General"
+            
+            if (apiKey.isNotBlank() && apiKey != "MY_GEMINI_API_KEY") {
+                try {
+                    val prompt = "Categorize the following note into one single short category name (e.g., Work, Personal, Ideas, Travel, Health). Note Title: $title. Note Content: $content. Respond ONLY with the category name."
+                    val request = GenerateContentRequest(
+                        contents = listOf(Content(parts = listOf(Part(text = prompt))))
+                    )
+                    val response = RetrofitClient.service.generateContent(apiKey, request)
+                    val aiCategory = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+                    if (!aiCategory.isNullOrBlank()) {
+                        category = aiCategory.take(20) // Limit length
+                    }
+                } catch (e: Exception) {
+                    // Fallback to General
+                }
+            }
+            
+            repository.insert(Note(title = title, content = content, category = category))
         }
     }
 

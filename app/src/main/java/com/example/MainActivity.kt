@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         val db = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java, "memora-database"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
         val repository = NoteRepository(db.noteDao())
         val viewModelFactory = MemoraViewModelFactory(repository)
         val viewModel = ViewModelProvider(this, viewModelFactory)[MemoraViewModel::class.java]
