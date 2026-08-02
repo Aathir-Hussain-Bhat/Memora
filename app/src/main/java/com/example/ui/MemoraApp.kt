@@ -41,7 +41,7 @@ fun MemoraApp(viewModel: MemoraViewModel) {
             val currentDestination = navBackStackEntry?.destination
             val isMainScreen = items.any { it.first == currentDestination?.route }
 
-            if (isMainScreen) {
+            if (isMainScreen && currentDestination?.route != "loading") {
                 NavigationBar {
                     items.forEachIndexed { index, item ->
                         NavigationBarItem(
@@ -65,9 +65,16 @@ fun MemoraApp(viewModel: MemoraViewModel) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "home",
+            startDestination = "loading",
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable("loading") {
+                LoadingScreen(onLoadingComplete = {
+                    navController.navigate("home") {
+                        popUpTo("loading") { inclusive = true }
+                    }
+                })
+            }
             composable("home") {
                 HomeScreen(
                     viewModel = viewModel,
@@ -91,7 +98,7 @@ fun MemoraApp(viewModel: MemoraViewModel) {
                 AiScreen(viewModel = viewModel)
             }
             composable("profile") {
-                ProfileScreen()
+                ProfileScreen(viewModel = viewModel)
             }
             composable("add_note") {
                 AddNoteScreen(

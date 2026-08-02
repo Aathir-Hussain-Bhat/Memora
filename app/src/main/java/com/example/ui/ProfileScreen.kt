@@ -1,6 +1,7 @@
 package com.example.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,18 +10,28 @@ import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(viewModel: MemoraViewModel) {
+    var showAiSettings by remember { mutableStateOf(false) }
+
+    if (showAiSettings) {
+        AiSettingsDialog(viewModel = viewModel, onDismiss = { showAiSettings = false })
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -72,6 +83,12 @@ fun ProfileScreen() {
 
             // Settings list
             SettingsItem(
+                icon = Icons.Default.SmartToy,
+                title = "AI Settings",
+                subtitle = "Configure OpenRouter API",
+                onClick = { showAiSettings = true }
+            )
+            SettingsItem(
                 icon = Icons.Default.CloudSync,
                 title = "Sync & Backup",
                 subtitle = "Last synced 2 hours ago"
@@ -110,10 +127,119 @@ fun ProfileScreen() {
 }
 
 @Composable
-fun SettingsItem(icon: ImageVector, title: String, subtitle: String) {
+fun AiSettingsDialog(viewModel: MemoraViewModel, onDismiss: () -> Unit) {
+    var apiKey by remember { mutableStateOf(viewModel.settings.openRouterApiKey) }
+    var modelName by remember { mutableStateOf(viewModel.settings.modelName) }
+    var mockMode by remember { mutableStateOf(viewModel.settings.mockMode) }
+    
+    var connectionStatus by remember { mutableStateOf<String?>(null) }
+    var isTesting by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "AI Settings",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                OutlinedTextField(
+                    value = apiKey,
+                    onValueChange = { apiKey = it },
+                    label = { Text("OpenRouter API Key") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = modelName,
+                    onValueChange = { modelName = it },
+                    label = { Text("Model Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Mock Mode (Offline Test)")
+                    Switch(
+                        checked = mockMode,
+                        onCheckedChange = { mockMode = it }
+                    )
+                }
+
+                if (connectionStatus != null) {
+                    Text(
+                        text = connectionStatus!!,
+                        color = if (connectionStatus!!.contains("successful") || connectionStatus!!.contains("Mock mode")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.settings.openRouterApiKey = apiKey
+                        viewModel.settings.modelName = modelName
+                        viewModel.settings.mockMode = mockMode
+                        
+                        isTesting = true
+                        connectionStatus = "Testing..."
+                        viewModel.testConnection { success, message ->
+                            isTesting = false
+                            connectionStatus = message
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isTesting
+                ) {
+                    if (isTesting) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Test Connection")
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Close")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = {
+                        viewModel.settings.openRouterApiKey = apiKey
+                        viewModel.settings.modelName = modelName
+                        viewModel.settings.mockMode = mockMode
+                        onDismiss()
+                    }) {
+                        Text("Save")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsItem(icon: ImageVector, title: String, subtitle: String, onClick: (() -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

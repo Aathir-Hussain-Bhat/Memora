@@ -23,7 +23,8 @@ class MainActivity : ComponentActivity() {
             AppDatabase::class.java, "memora-database"
         ).fallbackToDestructiveMigration().build()
         val repository = NoteRepository(db.noteDao())
-        val viewModelFactory = MemoraViewModelFactory(repository)
+        val settingsRepository = com.example.data.SettingsRepository(this)
+        val viewModelFactory = MemoraViewModelFactory(repository, settingsRepository)
         val viewModel = ViewModelProvider(this, viewModelFactory)[MemoraViewModel::class.java]
 
         setContent {
